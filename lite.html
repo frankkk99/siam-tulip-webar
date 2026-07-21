@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#06110a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>AR ดอกกระเจียวแดง</title>
+  <link rel="stylesheet" href="css/site.css" />
+  <link rel="preload" href="assets/siam-tulip-loop.mp4" as="video" type="video/mp4" />
+  <script src="vendor/aframe-1.6.0.min.js"></script>
+  <script src="js/ar-shader.js"></script>
+  <script src="js/settings-store.js"></script>
+  <script src="js/media-store.js"></script>
+  <script defer src="js/lite-ar.js"></script>
+</head>
+<body class="lite-ar-page">
+  <video id="cameraFeed" class="camera-feed" autoplay muted playsinline webkit-playsinline></video>
+
+  <div id="liteStartScreen" class="start-screen">
+    <div class="card">
+      <img id="litePoster" class="poster" src="assets/poster.jpg" alt="ดอกกระเจียวแดง" />
+      <h1 id="liteTitle">AR ดอกกระเจียวแดง</h1>
+      <p id="liteDescription">เปิดกล้องแล้วแตะพื้นกลางห้องเพื่อวางดอกกระเจียว</p>
+      <button id="startLiteButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
+      <div id="liteStartError" class="start-error" hidden></div>
+      <div id="liteHint" class="hint">โหมดนี้ใช้กล้องโดยตรง จึงเปิดได้ทั้ง iPhone และ Android</div>
+    </div>
+  </div>
+
+  <div id="ui" class="ui" aria-live="polite">
+    <div class="topbar"><div id="status" class="status">รอเริ่มเปิดกล้อง…</div></div>
+    <div id="floorGuide" class="floor-guide" hidden>
+      <span class="floor-guide-ring"></span>
+      <small id="guideText">เล็งวงกลมไปที่พื้น แล้วแตะหน้าจอเพื่อวาง</small>
+    </div>
+    <div class="controls">
+      <button id="placeButton" type="button" hidden>วางดอกไม้ตรงนี้</button>
+      <button id="repositionButton" type="button" hidden>ย้ายตำแหน่ง</button>
+      <button id="replayButton" type="button" hidden>เล่นใหม่</button>
+      <a class="button" href="world.html">ลองโหมดติดตามพื้น</a>
+    </div>
+    <div id="errorBox" class="error-box" hidden></div>
+  </div>
+
+  <a-scene
+    id="liteScene"
+    class="lite-scene"
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    renderer="alpha: true; antialias: true; colorManagement: true">
+    <a-assets timeout="30000">
+      <video id="flowerVideo" src="assets/siam-tulip-loop.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+    </a-assets>
+
+    <a-entity id="liteFlowerRoot" visible="false" position="0 -0.52 -2.4">
+      <a-plane
+        id="liteFlowerPlane"
+        position="0 0.52 0"
+        width="1.62"
+        height="0.91"
+        material="shader: chromakey; src: #flowerVideo; keyColor: #047EF7; similarity: 0.060; smoothness: 0.115; spill: 0.85; transparent: true; side: double; depthWrite: false">
+      </a-plane>
+    </a-entity>
+    <a-camera id="liteCamera" position="0 0 0" look-controls="enabled: false"></a-camera>
+  </a-scene>
+</body>
+</html>
