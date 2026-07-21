@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Admin · Siam Tulip Web AR</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <script src="../js/settings-store.js"></script>
+  <script src="../js/media-store.js"></script>
+  <script defer src="admin.js"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <small>SIAM TULIP WEB AR</small>
+      <h1>เข้าสู่ระบบแอดมิน</h1>
+      <p>หน้าแอดมินไม่มีลิงก์จากหน้าเว็บหลัก ต้องเข้าผ่าน <strong>/admin</strong> โดยตรง</p>
+      <form id="loginForm">
+        <label for="pinInput">PIN ชั่วคราว</label>
+        <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="กรอก PIN" required />
+        <button class="button primary" type="submit">เข้าสู่ระบบ</button>
+        <small>ค่าเริ่มต้นครั้งแรก: 2468</small>
+      </form>
+    </div>
+  </section>
+
+  <div id="adminShell" class="shell" hidden>
+    <aside class="sidebar">
+      <div class="brand"><small>ADMIN CONSOLE</small><h1>Siam Tulip Web AR</h1></div>
+      <nav class="nav">
+        <a href="#general">หน้าเว็บ</a>
+        <a href="#theme">ธีม</a>
+        <a href="#media">สื่อ</a>
+        <a href="#ar">ตำแหน่ง AR</a>
+        <a href="#chroma">ตัดพื้นหลัง</a>
+        <a href="#status">ข้อความสถานะ</a>
+        <a href="#system">ระบบ</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="openPreviewButton" class="button ghost" type="button">เปิดพรีวิวเต็มหน้า</button>
+        <button id="logoutButton" class="button ghost" type="button">ออกจากระบบ</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="toolbar">
+        <div>
+          <strong>ตัวแก้ไขเว็บไซต์</strong>
+          <div id="saveStatus" class="toolbar-status">พร้อมแก้ไข</div>
+        </div>
+        <div class="toolbar-actions">
+          <button id="discardButton" class="button ghost" type="button">ยกเลิก Draft</button>
+          <button id="publishButton" class="button primary" type="button">เผยแพร่ในเครื่องนี้</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="hero">
+          <div><h2>ปรับ Web AR ได้จากหน้าเดียว</h2><p>แก้ข้อความ สี ไฟล์ ตำแหน่ง และพฤติกรรมของดอกกระเจียว</p></div>
+        </div>
+        <div class="notice"><strong>โหมดก่อนเชื่อม Supabase:</strong> ค่าที่เผยแพร่และไฟล์อัปโหลดจะมีผลเฉพาะเบราว์เซอร์/อุปกรณ์นี้เท่านั้น ยังไม่ส่งไปยังมือถือผู้เข้าชมเครื่องอื่น ระบบเตรียมโครงสร้าง Draft/Publish ไว้สำหรับย้ายขึ้น Supabase ภายหลังแล้ว</div>
+
+        <div class="preview-wrap">
+          <div class="grid">
+            <section id="general" class="section full">
+              <h3>หน้าเว็บผู้เข้าชม</h3><p>กำหนดเนื้อหาที่ผู้เข้าชมเห็นก่อนเปิดกล้อง</p>
+              <div class="fields">
+                <div class="field full"><label>เปิดนิทรรศการ</label><div class="toggle"><input type="checkbox" data-setting="general.enabled" /><span>อนุญาตให้เปิดกล้อง AR</span></div></div>
+                <div class="field"><label>ชื่อหน้าเว็บ</label><input type="text" data-setting="general.title" /></div>
+                <div class="field"><label>ข้อความปุ่มเริ่ม</label><input type="text" data-setting="general.startButton" /></div>
+                <div class="field full"><label>คำอธิบาย</label><textarea data-setting="general.description"></textarea></div>
+                <div class="field full"><label>คำแนะนำใต้ปุ่ม</label><input type="text" data-setting="general.hint" /></div>
+                <div class="field"><label>ข้อความปุ่มเล่นใหม่</label><input type="text" data-setting="general.replayButton" /></div>
+                <div class="field"><label>ข้อความปุ่มมาร์กเกอร์</label><input type="text" data-setting="general.markerButton" /></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="general.showReplayButton" />แสดงปุ่มเล่นใหม่</label></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="general.showMarkerButton" />แสดงปุ่มมาร์กเกอร์</label></div>
+                <div class="field"><label>หัวข้อเมื่อปิดนิทรรศการ</label><input type="text" data-setting="general.closedTitle" /></div>
+                <div class="field"><label>รายละเอียดเมื่อปิด</label><input type="text" data-setting="general.closedDescription" /></div>
+              </div>
+            </section>
+
+            <section id="theme" class="section full">
+              <h3>สีและหน้าตา</h3><p>ปรับธีมของหน้าเริ่มต้นและแถบสถานะ</p>
+              <div class="fields">
+                <div class="field"><label>สีหลัก</label><input type="color" data-setting="theme.primary" /></div>
+                <div class="field"><label>สีพื้นหลัง</label><input type="color" data-setting="theme.background" /></div>
+                <div class="field"><label>สีการ์ด</label><input type="color" data-setting="theme.panel" /></div>
+                <div class="field"><label>สีข้อความ</label><input type="color" data-setting="theme.text" /></div>
+                <div class="field"><label>สีข้อความรอง</label><input type="color" data-setting="theme.mutedText" /></div>
+                <div class="field"><label>สีเมื่อพบมาร์กเกอร์</label><input type="color" data-setting="theme.statusFound" /></div>
+                <div class="field"><label>ความโค้งการ์ด</label><div class="range-row"><input type="range" min="8" max="48" step="1" data-setting="theme.cornerRadius" /><input type="number" min="8" max="48" step="1" data-setting="theme.cornerRadius" /></div></div>
+                <div class="field"><label>ความทึบการ์ด</label><div class="range-row"><input type="range" min="0.4" max="1" step="0.01" data-setting="theme.overlayOpacity" /><input type="number" min="0.4" max="1" step="0.01" data-setting="theme.overlayOpacity" /></div></div>
+              </div>
+            </section>
+
+            <section id="media" class="section full">
+              <h3>รูปและวิดีโอ</h3><p>อัปโหลดไฟล์เพื่อทดสอบในอุปกรณ์นี้ หรือระบุ URL ที่เปิดสาธารณะ</p>
+              <div class="fields">
+                <div class="field full">
+                  <label>ภาพหน้าปก</label>
+                  <select data-setting="media.posterMode"><option value="default">ใช้ไฟล์เดิมในเว็บไซต์</option><option value="url">ใช้ URL</option><option value="local">ใช้ไฟล์ที่อัปโหลดในเครื่องนี้</option></select>
+                  <input type="url" data-setting="media.posterUrl" placeholder="https://.../poster.jpg" />
+                  <div class="file-row"><input id="posterFile" type="file" accept="image/*" /><button id="removePosterButton" class="button ghost" type="button">ลบไฟล์อัปโหลด</button><span id="posterMeta" class="file-meta">ยังไม่มีไฟล์ในเครื่อง</span></div>
+                </div>
+                <div class="field full">
+                  <label>วิดีโอ AR</label>
+                  <select data-setting="media.videoMode"><option value="default">ใช้ไฟล์เดิมในเว็บไซต์</option><option value="url">ใช้ URL</option><option value="local">ใช้ไฟล์ที่อัปโหลดในเครื่องนี้</option></select>
+                  <input type="url" data-setting="media.videoUrl" placeholder="https://.../video.mp4" />
+                  <div class="file-row"><input id="videoFile" type="file" accept="video/mp4,video/webm,video/*" /><button id="removeVideoButton" class="button ghost" type="button">ลบไฟล์อัปโหลด</button><span id="videoMeta" class="file-meta">ยังไม่มีไฟล์ในเครื่อง</span></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="ar" class="section full">
+              <h3>ตำแหน่งและขนาด AR</h3><p>ปรับระนาบวิดีโอให้อยู่พอดีกับตำแหน่งบนพื้น</p>
+              <div class="fields">
+                <div class="field"><label>ความกว้าง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.width" /></div>
+                <div class="field"><label>ความสูง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.height" /></div>
+                <div class="field"><label>ตำแหน่ง X</label><input type="number" min="-5" max="5" step="0.01" data-setting="ar.positionX" /></div>
+                <div class="field"><label>ตำแหน่ง Y (สูงจากพื้น)</label><input type="number" min="-5" max="5" step="0.01" data-setting="ar.positionY" /></div>
+                <div class="field"><label>ตำแหน่ง Z</label><input type="number" min="-5" max="5" step="0.01" data-setting="ar.positionZ" /></div>
+                <div class="field"><label>หมุนแกน X</label><input type="number" min="-360" max="360" step="1" data-setting="ar.rotationX" /></div>
+                <div class="field"><label>หมุนแกน Y</label><input type="number" min="-360" max="360" step="1" data-setting="ar.rotationY" /></div>
+                <div class="field"><label>หมุนแกน Z</label><input type="number" min="-360" max="360" step="1" data-setting="ar.rotationZ" /></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.loop" />เล่นวิดีโอวนลูป</label></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.restartWhenFound" />เริ่มใหม่เมื่อพบมาร์กเกอร์</label></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.resetOnLost" />รีเซ็ตเมื่อมาร์กเกอร์หลุด</label></div>
+                <div class="field"><label>หน่วงก่อนรีเซ็ต (ms)</label><input type="number" min="0" max="10000" step="100" data-setting="ar.lostDelayMs" /></div>
+              </div>
+            </section>
+
+            <section id="chroma" class="section full">
+              <h3>การตัดพื้นหลังสีน้ำเงิน</h3><p>ค่าที่มากขึ้นจะตัดสีออกกว้างขึ้น ควรปรับทีละน้อย</p>
+              <div class="fields">
+                <div class="field"><label>สีพื้นหลัง</label><input type="color" data-setting="ar.keyColor" /></div>
+                <div class="field"><label>Similarity</label><input type="number" min="0" max="1" step="0.001" data-setting="ar.similarity" /></div>
+                <div class="field"><label>Smoothness</label><input type="number" min="0" max="1" step="0.001" data-setting="ar.smoothness" /></div>
+                <div class="field"><label>ลดสีสะท้อน (Spill)</label><input type="number" min="0" max="1" step="0.01" data-setting="ar.spill" /></div>
+              </div>
+            </section>
+
+            <section id="status" class="section full">
+              <h3>ข้อความสถานะ</h3><p>ข้อความที่แสดงระหว่างเปิดกล้องและตรวจจับมาร์กเกอร์</p>
+              <div class="fields">
+                <div class="field"><label>กำลังเตรียม</label><input type="text" data-setting="status.preparing" /></div>
+                <div class="field"><label>กล้องพร้อม</label><input type="text" data-setting="status.ready" /></div>
+                <div class="field"><label>กำลังค้นหา</label><input type="text" data-setting="status.scanning" /></div>
+                <div class="field"><label>พบมาร์กเกอร์</label><input type="text" data-setting="status.found" /></div>
+                <div class="field"><label>มาร์กเกอร์หลุด</label><input type="text" data-setting="status.lost" /></div>
+                <div class="field"><label>กล้องผิดพลาด</label><input type="text" data-setting="status.cameraError" /></div>
+                <div class="field full"><label>วิดีโอผิดพลาด</label><input type="text" data-setting="status.videoError" /></div>
+              </div>
+            </section>
+
+            <section id="system" class="section full">
+              <h3>ระบบและการสำรองค่า</h3><p>จัดการ PIN ชั่วคราว ส่งออก JSON และคืนค่าเริ่มต้น</p>
+              <div class="fields">
+                <div class="field"><label>เปลี่ยน PIN</label><input id="newPinInput" type="password" inputmode="numeric" placeholder="ตัวเลข 4–12 หลัก" /><button id="changePinButton" class="button" type="button">บันทึก PIN</button></div>
+                <div class="field"><label>นำเข้า/ส่งออกการตั้งค่า</label><div class="file-row"><button id="exportButton" class="button" type="button">ดาวน์โหลด JSON</button><label class="button" for="importFile">นำเข้า JSON</label><input id="importFile" type="file" accept="application/json" hidden /></div></div>
+                <div class="field full"><label>คืนค่า</label><div class="file-row"><button id="resetDraftButton" class="button ghost" type="button">คืน Draft เป็นค่าที่เผยแพร่</button><button id="resetAllButton" class="button danger" type="button">ล้างค่าทั้งหมดในเครื่องนี้</button></div></div>
+              </div>
+            </section>
+          </div>
+
+          <aside class="preview-phone" id="previewPhone">
+            <div class="preview-screen">
+              <div class="preview-card" id="previewCard">
+                <img id="previewPoster" src="../assets/poster.jpg" alt="ตัวอย่างภาพหน้าปก" />
+                <h4 id="previewTitle">AR ดอกกระเจียวแดง</h4>
+                <p id="previewDescription">ตัวอย่างคำอธิบาย</p>
+                <button id="previewStartButton" type="button">เริ่มเปิดกล้อง AR</button>
+                <div id="previewHint" class="preview-hint">ตัวอย่างคำแนะนำ</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>
