@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#06110a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>AR ดอกกระเจียวแดง</title>
+  <link rel="stylesheet" href="css/site.css" />
+  <link rel="preload" href="assets/siam-tulip-loop.mp4" as="video" type="video/mp4" />
+  <script src="vendor/aframe-1.6.0.min.js"></script>
+  <script src="js/ar-shader.js"></script>
+  <script src="js/settings-store.js"></script>
+  <script src="js/media-store.js"></script>
+  <script defer src="js/floor-ar.js"></script>
+</head>
+<body>
+  <div id="startScreen" class="start-screen">
+    <div class="card">
+      <img id="poster" class="poster" src="assets/poster.jpg" alt="ดอกกระเจียวแดง" />
+      <h1 id="title">AR ดอกกระเจียวแดง</h1>
+      <p id="description">กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง</p>
+      <button id="startButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
+      <div id="hint" class="hint">ขยับโทรศัพท์ช้า ๆ เพื่อให้ระบบตรวจจับพื้น</div>
+    </div>
+  </div>
+
+  <div id="ui" class="ui" aria-live="polite">
+    <div class="topbar"><div id="status" class="status">กำลังเตรียมระบบตรวจจับพื้น…</div></div>
+    <div class="floor-guide" id="floorGuide" hidden>
+      <span class="floor-guide-ring"></span>
+      <small>เล็งวงกลมไปที่พื้นกลางห้อง</small>
+    </div>
+    <div class="controls">
+      <button id="placeButton" type="button" hidden>วางดอกไม้ตรงนี้</button>
+      <button id="repositionButton" type="button" hidden>ย้ายตำแหน่ง</button>
+      <button id="replayButton" type="button">เล่นใหม่</button>
+    </div>
+    <div id="errorBox" class="error-box" hidden></div>
+  </div>
+
+  <a-scene
+    id="arScene"
+    embedded
+    xr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    renderer="alpha: true; antialias: true; colorManagement: true; precision: medium"
+    webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #ui"
+    floor-hit-test
+  >
+    <a-assets timeout="30000">
+      <video id="flowerVideo" src="assets/siam-tulip-loop.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+    </a-assets>
+
+    <a-entity id="reticle" visible="false">
+      <a-ring radius-inner="0.075" radius-outer="0.105" rotation="-90 0 0" material="color: #ffffff; shader: flat; opacity: 0.92; transparent: true"></a-ring>
+      <a-ring radius-inner="0.115" radius-outer="0.122" rotation="-90 0 0" material="color: #28a85f; shader: flat; opacity: 0.72; transparent: true"></a-ring>
+    </a-entity>
+
+    <a-entity id="flowerRoot" visible="false">
+      <a-plane
+        id="flowerPlane"
+        position="0 0.52 0"
+        width="1.62"
+        height="0.91"
+        face-camera-y
+        material="shader: chromakey; src: #flowerVideo; keyColor: #047EF7; similarity: 0.060; smoothness: 0.115; spill: 0.85; transparent: true; side: double; depthWrite: false"
+      ></a-plane>
+    </a-entity>
+
+    <a-entity id="arCamera" camera look-controls="enabled: false"></a-entity>
+  </a-scene>
+</body>
+</html>
