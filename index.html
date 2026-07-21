@@ -2,62 +2,27 @@
 <html lang="th">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#06110a" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <title>AR ดอกกระเจียวแดง</title>
-  <link rel="stylesheet" href="css/site.css" />
-  <link rel="preload" href="assets/siam-tulip-loop.mp4" as="video" type="video/mp4" />
-  <script src="vendor/aframe-1.6.0.min.js"></script>
-  <script src="vendor/aframe-ar-3.4.8.js"></script>
-  <script src="js/ar-shader.js"></script>
+  <title>กำลังเปิด Web AR…</title>
   <script src="js/settings-store.js"></script>
-  <script src="js/media-store.js"></script>
-  <script defer src="js/ar-app.js"></script>
 </head>
 <body>
-  <div id="startScreen" class="start-screen">
-    <div class="card">
-      <img id="poster" class="poster" src="assets/poster.jpg" alt="ดอกกระเจียวแดง" />
-      <h1 id="title">AR ดอกกระเจียวแดง</h1>
-      <p id="description">กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น</p>
-      <button id="startButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
-      <div id="hint" class="hint">อนุญาตสิทธิ์กล้องเพื่อเริ่มใช้งาน</div>
-    </div>
-  </div>
-
-  <div id="ui" class="ui" aria-live="polite">
-    <div class="topbar"><div id="status" class="status">กำลังเตรียมกล้อง…</div></div>
-    <div class="controls">
-      <button id="replayButton" type="button">เล่นใหม่</button>
-      <a id="markerButton" class="button" href="marker.html" target="_blank" rel="noopener">ดูมาร์กเกอร์</a>
-    </div>
-  </div>
-  <div id="errorBox" class="error-box" hidden></div>
-
-  <a-scene
-    id="arScene"
-    embedded
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    renderer="alpha: true; antialias: true; colorManagement: true; precision: medium; logarithmicDepthBuffer: true"
-    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false; cameraParametersUrl: https://ar-js-org.github.io/AR.js/three.js/data/data/camera_para.dat; maxDetectionRate: 30; canvasWidth: 640; canvasHeight: 480;"
-  >
-    <a-assets timeout="30000">
-      <video id="flowerVideo" src="assets/siam-tulip-loop.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-    </a-assets>
-
-    <a-marker id="flowerMarker" preset="hiro" emitevents="true" smooth="true" smooth-count="12" smooth-tolerance="0.01" smooth-threshold="4">
-      <a-plane
-        id="flowerPlane"
-        position="0 0.52 0"
-        width="1.62"
-        height="0.91"
-        material="shader: chromakey; src: #flowerVideo; keyColor: #047EF7; similarity: 0.060; smoothness: 0.115; spill: 0.85; transparent: true; side: double; depthWrite: false"
-      ></a-plane>
-    </a-marker>
-    <a-entity camera></a-entity>
-  </a-scene>
+  <p style="font-family:system-ui;padding:24px">กำลังเปิดระบบ AR…</p>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const useDraft = params.get('preview') === 'draft';
+      const settings = useDraft
+        ? window.SiamTulipSettings.getDraft()
+        : window.SiamTulipSettings.getPublished();
+      const requestedMode = params.get('mode');
+      const mode = requestedMode || settings.ar.trackingMode || 'floor';
+      params.delete('mode');
+      const query = params.toString();
+      const target = mode === 'marker' ? 'marker-ar.html' : 'floor.html';
+      location.replace(`${target}${query ? `?${query}` : ''}`);
+    })();
+  </script>
 </body>
 </html>
