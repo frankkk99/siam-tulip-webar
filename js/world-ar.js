@@ -8,19 +8,24 @@
   const mediaStore = window.SiamTulipMedia;
   const settings = useDraft ? store.getDraft() : store.getPublished();
 
-  AFRAME.registerComponent('face-camera-y', {
-    tick: function () {
-      const camera = this.el.sceneEl?.camera;
-      if (!camera) return;
-      const object = this.el.object3D;
-      const cameraPosition = new THREE.Vector3();
-      const worldPosition = new THREE.Vector3();
-      camera.getWorldPosition(cameraPosition);
-      object.getWorldPosition(worldPosition);
-      cameraPosition.y = worldPosition.y;
-      object.lookAt(cameraPosition);
-    }
-  });
+  if (!AFRAME.components['face-camera-y']) {
+    AFRAME.registerComponent('face-camera-y', {
+      init: function () {
+        this.cameraPosition = new THREE.Vector3();
+        this.worldPosition = new THREE.Vector3();
+      },
+
+      tick: function () {
+        const camera = this.el.sceneEl && this.el.sceneEl.camera;
+        if (!camera) return;
+        const object = this.el.object3D;
+        camera.getWorldPosition(this.cameraPosition);
+        object.getWorldPosition(this.worldPosition);
+        this.cameraPosition.y = this.worldPosition.y;
+        object.lookAt(this.cameraPosition);
+      }
+    });
+  }
 
   AFRAME.registerComponent('siam-world-placement', {
     init: function () {
@@ -30,15 +35,20 @@
       this.stableSince = 0;
       this.lastPoint = new THREE.Vector3();
       this.point = new THREE.Vector3();
+      this.cameraPosition = new THREE.Vector3();
       this.floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       this.raycaster = new THREE.Raycaster();
       this.center = new THREE.Vector2(0, 0);
-      this.reticle = document.getElementById('reticle');
-      this.flowerRoot = document.getElementById('flowerRoot');
-      this.video = document.getElementById('flowerVideo');
+      this.reticle = null;
+      this.flowerRoot = null;
+      this.video = null;
+
+      this.resolveElements();
+      this.el.addEventListener('loaded', () => this.resolveElements());
 
       this.el.addEventListener('realityready', () => {
         this.ready = true;
+        this.resolveElements();
         this.el.emit('siam-world-ready');
       });
 
@@ -47,8 +57,15 @@
       });
     },
 
+    resolveElements: function () {
+      this.reticle = this.reticle || document.getElementById('reticle');
+      this.flowerRoot = this.flowerRoot || document.getElementById('flowerRoot');
+      this.video = this.video || document.getElementById('flowerVideo');
+      return Boolean(this.reticle && this.flowerRoot && this.video);
+    },
+
     tick: function (time) {
-      if (!this.ready || this.placed || !this.el.camera) return;
+      if (!this.ready || this.placed || !this.el.camera || !this.resolveElements()) return;
 
       this.raycaster.setFromCamera(this.center, this.el.camera);
       const ray = this.raycaster.ray;
@@ -59,9 +76,8 @@
         return;
       }
 
-      const cameraPosition = new THREE.Vector3();
-      this.el.camera.getWorldPosition(cameraPosition);
-      const distance = cameraPosition.distanceTo(this.point);
+      this.el.camera.getWorldPosition(this.cameraPosition);
+      const distance = this.cameraPosition.distanceTo(this.point);
       const maxDistance = Number(settings.ar.maxPlacementDistance) || 7;
       if (distance < 0.35 || distance > maxDistance) {
         this.clearPoint();
@@ -76,10 +92,10 @@
       this.reticle.setAttribute('visible', true);
       this.el.emit('siam-floor-found', { point: this.point.clone() }, false);
 
-      if (moved > 0.09) this.stableSince = time;
-      if (!this.stableSince) this.stableSince = time;
+      if (moved > 0.09 || !this.stableSince) this.stableSince = time;
 
-      if (settings.ar.autoPlace !== false && time - this.stableSince >= Math.max(250, Number(settings.ar.autoPlaceDelayMs) || 900)) {
+      const delay = Math.max(250, Number(settings.ar.autoPlaceDelayMs) || 900);
+      if (settings.ar.autoPlace !== false && time - this.stableSince >= delay) {
         this.place();
       }
     },
@@ -88,11 +104,11 @@
       if (this.hasPoint) this.el.emit('siam-floor-lost');
       this.hasPoint = false;
       this.stableSince = 0;
-      this.reticle?.setAttribute('visible', false);
+      if (this.reticle) this.reticle.setAttribute('visible', false);
     },
 
     place: function () {
-      if (!this.hasPoint || this.placed) return false;
+      if (!this.hasPoint || this.placed || !this.resolveElements()) return false;
       this.flowerRoot.object3D.position.copy(this.lastPoint);
       this.flowerRoot.object3D.scale.setScalar(Number(settings.ar.floorScale) || 1);
       this.flowerRoot.setAttribute('visible', true);
@@ -105,6 +121,7 @@
     },
 
     resetPlacement: function () {
+      if (!this.resolveElements()) return;
       this.placed = false;
       this.hasPoint = false;
       this.stableSince = 0;
@@ -117,7 +134,9 @@
 
     recenter: function () {
       try {
-        if (window.XR8?.XrController?.recenter) window.XR8.XrController.recenter();
+        if (window.XR8 && window.XR8.XrController && window.XR8.XrController.recenter) {
+          window.XR8.XrController.recenter();
+        }
       } catch (error) {
         console.warn('Unable to recenter XR', error);
       }
@@ -125,18 +144,30 @@
     }
   });
 
-  function byId(id) { return document.getElementById(id); }
+  function byId(id) {
+    return document.getElementById(id);
+  }
 
-  function setStatus(text, found = false) {
+  function setStatus(text, found) {
     const status = byId('status');
+    if (!status) return;
     status.textContent = text;
-    status.classList.toggle('found', found);
+    status.classList.toggle('found', Boolean(found));
   }
 
   function showError(message) {
     const box = byId('errorBox');
+    if (!box) return;
     box.textContent = message;
     box.hidden = false;
+  }
+
+  function markerFallback(reason) {
+    if (!settings.ar.fallbackToMarker) return false;
+    const params = new URLSearchParams(location.search);
+    params.set('fallback', reason || 'world-tracking-error');
+    location.replace(`marker-ar.html?${params.toString()}`);
+    return true;
   }
 
   function applyTheme() {
@@ -150,8 +181,10 @@
     root.style.setProperty('--error', settings.theme.error);
     root.style.setProperty('--radius', `${settings.theme.cornerRadius}px`);
     root.style.setProperty('--panel-mix', `${Math.round(Number(settings.theme.overlayOpacity) * 100)}%`);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', settings.theme.background);
-    byId('reticle')?.querySelectorAll('a-ring')[1]?.setAttribute('material', 'color', settings.theme.primary);
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute('content', settings.theme.background);
+    const rings = byId('reticle') && byId('reticle').querySelectorAll('a-ring');
+    if (rings && rings[1]) rings[1].setAttribute('material', 'color', settings.theme.primary);
   }
 
   async function applyMedia() {
@@ -199,10 +232,22 @@
       return;
     }
 
-    scene.addEventListener('siam-world-ready', () => {
+    let worldReady = false;
+    const readyTimeout = window.setTimeout(() => {
+      if (!worldReady && !markerFallback('world-load-timeout')) {
+        showError('ระบบติดตามพื้นโหลดนานเกินไป กรุณาตรวจสอบอินเทอร์เน็ต แล้วรีเฟรชหน้าเว็บ');
+      }
+    }, 20000);
+
+    const onWorldReady = () => {
+      worldReady = true;
+      window.clearTimeout(readyTimeout);
       floorGuide.hidden = false;
       setStatus(settings.status.scanning);
-    });
+    };
+
+    scene.addEventListener('siam-world-ready', onWorldReady);
+    if (placement() && placement().ready) onWorldReady();
 
     scene.addEventListener('siam-floor-found', () => {
       setStatus(settings.status.found, true);
@@ -230,16 +275,28 @@
 
     scene.addEventListener('siam-world-error', (event) => {
       console.error('8th Wall reality error', event.detail);
-      showError(settings.status.sessionError || 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาอนุญาตกล้องและการเคลื่อนไหว');
+      window.clearTimeout(readyTimeout);
+      if (!markerFallback('world-tracking-error')) {
+        showError(settings.status.sessionError || 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาอนุญาตกล้องและการเคลื่อนไหว');
+      }
     });
 
     scene.addEventListener('siam-video-blocked', () => {
       showError(settings.status.videoError);
     });
 
-    placeButton.addEventListener('click', () => placement()?.place());
-    repositionButton.addEventListener('click', () => placement()?.resetPlacement());
-    recenterButton.addEventListener('click', () => placement()?.recenter());
+    placeButton.addEventListener('click', () => {
+      const component = placement();
+      if (component) component.place();
+    });
+    repositionButton.addEventListener('click', () => {
+      const component = placement();
+      if (component) component.resetPlacement();
+    });
+    recenterButton.addEventListener('click', () => {
+      const component = placement();
+      if (component) component.recenter();
+    });
     replayButton.addEventListener('click', () => {
       const video = byId('flowerVideo');
       video.currentTime = 0;
