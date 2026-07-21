@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const VERSION = 1;
+  const VERSION = 2;
   const PUBLISHED_KEY = 'siam-tulip-webar:published:v1';
   const DRAFT_KEY = 'siam-tulip-webar:draft:v1';
   const PIN_KEY = 'siam-tulip-webar:admin-pin:v1';
@@ -13,22 +13,27 @@
     general: {
       enabled: true,
       title: 'AR ดอกกระเจียวแดง',
-      description: 'กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น ดอกกระเจียวจะค่อย ๆ เติบโตและเล่นวนอยู่ที่ตำแหน่งเดิม',
+      description: 'กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ',
       startButton: 'เริ่มเปิดกล้อง AR',
-      hint: 'ใช้ Chrome บน Android หรือ Safari บน iPhone และอนุญาตสิทธิ์กล้อง',
+      hint: 'ขยับโทรศัพท์ช้า ๆ ซ้าย–ขวา เพื่อให้ระบบตรวจจับพื้น',
       closedTitle: 'นิทรรศการยังไม่เปิดให้เข้าชม',
       closedDescription: 'กรุณากลับมาใหม่อีกครั้งตามเวลาที่กำหนด',
       showReplayButton: true,
-      showMarkerButton: true,
+      showMarkerButton: false,
       replayButton: 'เล่นใหม่',
-      markerButton: 'ดูมาร์กเกอร์'
+      markerButton: 'ดูมาร์กเกอร์',
+      placeButton: 'วางดอกไม้ตรงนี้',
+      repositionButton: 'ย้ายตำแหน่ง'
     },
     status: {
-      preparing: 'กำลังเตรียมกล้อง…',
-      ready: 'กล้องพร้อมแล้ว — กดเริ่ม',
-      scanning: 'หันกล้องไปที่มาร์กเกอร์บนพื้น',
-      found: 'พบจุด AR แล้ว — ถือกล้องให้นิ่ง',
-      lost: 'มาร์กเกอร์หลุดจากกล้อง — หันกลับไปที่พื้น',
+      preparing: 'กำลังเตรียมระบบตรวจจับพื้น…',
+      ready: 'ระบบพร้อมแล้ว — กดเริ่ม',
+      scanning: 'หันกล้องลงพื้นกลางห้อง แล้วขยับโทรศัพท์ช้า ๆ',
+      found: 'จับพื้นได้แล้ว — ถือกล้องให้นิ่ง',
+      placed: 'วางดอกกระเจียวแล้ว — เดินดูรอบ ๆ ได้',
+      lost: 'ตำแหน่งหลุดจากกล้อง — หันกลับไปที่พื้น',
+      unsupported: 'มือถือเครื่องนี้ยังไม่รองรับการตรวจจับพื้นแบบ WebXR',
+      sessionError: 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR',
       videoError: 'วิดีโอเริ่มเล่นไม่ได้ กรุณาแตะปุ่ม “เล่นใหม่” อีกครั้ง',
       cameraError: 'เปิดกล้องไม่ได้ กรุณาอนุญาตสิทธิ์กล้อง แล้วรีเฟรชหน้าเว็บ'
     },
@@ -50,6 +55,11 @@
       videoUrl: 'assets/siam-tulip-loop.mp4'
     },
     ar: {
+      trackingMode: 'floor',
+      autoPlace: true,
+      autoPlaceDelayMs: 900,
+      floorScale: 1,
+      fallbackToMarker: false,
       markerPreset: 'hiro',
       positionX: 0,
       positionY: 0.52,
@@ -110,8 +120,30 @@
     return value;
   }
 
+  function migrate(value) {
+    const next = clone(value || {});
+    const oldDescription = 'กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น ดอกกระเจียวจะค่อย ๆ เติบโตและเล่นวนอยู่ที่ตำแหน่งเดิม';
+    const oldHint = 'ใช้ Chrome บน Android หรือ Safari บน iPhone และอนุญาตสิทธิ์กล้อง';
+    const oldScanning = 'หันกล้องไปที่มาร์กเกอร์บนพื้น';
+    const oldFound = 'พบจุด AR แล้ว — ถือกล้องให้นิ่ง';
+
+    if (Number(next.version || 1) < VERSION) {
+      next.general = next.general || {};
+      next.status = next.status || {};
+      next.ar = next.ar || {};
+      if (!next.general.description || next.general.description === oldDescription) next.general.description = defaults.general.description;
+      if (!next.general.hint || next.general.hint === oldHint) next.general.hint = defaults.general.hint;
+      if (!next.status.scanning || next.status.scanning === oldScanning) next.status.scanning = defaults.status.scanning;
+      if (!next.status.found || next.status.found === oldFound) next.status.found = defaults.status.found;
+      if (!Object.prototype.hasOwnProperty.call(next.ar, 'trackingMode')) next.ar.trackingMode = 'floor';
+      if (!Object.prototype.hasOwnProperty.call(next.general, 'showMarkerButton')) next.general.showMarkerButton = false;
+      next.version = VERSION;
+    }
+    return next;
+  }
+
   function normalize(value) {
-    return mergeDeep(defaults, value || {});
+    return mergeDeep(defaults, migrate(value));
   }
 
   function getPublished() {
