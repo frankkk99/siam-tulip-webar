@@ -107,9 +107,24 @@
     elements.status.classList.toggle('found', found);
   }
 
-  function showError(message) {
+  function setStartError(message = '') {
+    if (!elements.startError) return;
+    elements.startError.textContent = message;
+    elements.startError.hidden = !message;
+  }
+
+  function showError(message, { onStartScreen = false } = {}) {
     elements.errorBox.textContent = message;
     elements.errorBox.hidden = false;
+    if (onStartScreen || !elements.startScreen.hidden) setStartError(message);
+  }
+
+  function setStarting(isStarting) {
+    elements.startButton.disabled = isStarting;
+    elements.startButton.setAttribute('aria-busy', String(isStarting));
+    elements.startButton.textContent = isStarting
+      ? (settings.general.startingButton || 'กำลังตรวจสอบอุปกรณ์…')
+      : settings.general.startButton;
   }
 
   function applyTheme() {
@@ -176,15 +191,43 @@
       if (restart) elements.video.currentTime = 0;
       await elements.video.play();
     } catch (error) {
-      showError(settings.status.videoError);
+      showError(settings.status.videoError, { onStartScreen: !started });
       console.error(error);
     }
   }
 
-  async function supportsImmersiveAr() {
-    if (!navigator.xr?.isSessionSupported) return false;
-    try { return await navigator.xr.isSessionSupported('immersive-ar'); }
-    catch (error) { console.warn(error); return false; }
+  function isInAppBrowser() {
+    return /Line\/|FBAN|FBAV|Instagram|Messenger/i.test(navigator.userAgent || '');
+  }
+
+  function isIOS() {
+    const ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  async function getSupportProblem() {
+    if (!window.isSecureContext) {
+      return 'หน้านี้ต้องเปิดผ่าน HTTPS จึงจะใช้กล้องและตรวจจับพื้นได้';
+    }
+    if (isInAppBrowser()) {
+      return 'เบราว์เซอร์ในแอปยังเปิด Surface AR ไม่ได้ กรุณาเปิดลิงก์นี้ด้วย Chrome บน Android';
+    }
+    if (!navigator.xr) {
+      if (isIOS()) {
+        return 'iPhone และ Safari ยังไม่รองรับการตรวจจับพื้น WebXR แบบนี้ กรุณาทดลองด้วย Android ที่รองรับ ARCore';
+      }
+      return 'เบราว์เซอร์นี้ไม่มี WebXR กรุณาใช้ Chrome บน Android ที่รองรับ ARCore';
+    }
+    if (typeof navigator.xr.isSessionSupported !== 'function') {
+      return 'เบราว์เซอร์นี้ตรวจสอบ Surface AR ไม่ได้ กรุณาอัปเดต Chrome และ Google Play Services for AR';
+    }
+    try {
+      const supported = await navigator.xr.isSessionSupported('immersive-ar');
+      return supported ? '' : 'มือถือเครื่องนี้ไม่รองรับ Surface AR หรือยังไม่มี Google Play Services for AR';
+    } catch (error) {
+      console.error('Unable to check immersive-ar support', error);
+      return 'ตรวจสอบความสามารถ AR ไม่สำเร็จ กรุณาเปิดใหม่ด้วย Chrome บน Android';
+    }
   }
 
   function cancelAutoPlace() {
@@ -249,23 +292,47 @@
     setStatus(settings.status.scanning);
   }
 
+  async function enterImmersiveAr() {
+    try {
+      return await elements.scene.enterAR();
+    } catch (error) {
+      const message = String(error?.message || error);
+      if (/not supported/i.test(message) && typeof elements.scene.enterVR === 'function') {
+        return elements.scene.enterVR(true);
+      }
+      throw error;
+    }
+  }
+
   async function startAr() {
+    setStartError('');
     elements.errorBox.hidden = true;
-    const supported = await supportsImmersiveAr();
-    if (!supported) {
-      const message = settings.status.unsupported || 'มือถือเครื่องนี้ยังไม่รองรับการตรวจจับพื้นแบบ WebXR';
+    setStarting(true);
+
+    const problem = await getSupportProblem();
+    if (problem) {
       if (settings.ar.fallbackToMarker) {
         const params = new URLSearchParams(location.search);
         params.set('fallback', 'floor-unsupported');
         location.replace(`marker-ar.html?${params}`);
         return;
       }
-      showError(message);
+      showError(problem, { onStartScreen: true });
+      setStarting(false);
       return;
     }
 
     if (!elements.scene.hasLoaded) {
-      await new Promise((resolve) => elements.scene.addEventListener('loaded', resolve, { once: true }));
+      try {
+        await Promise.race([
+          new Promise((resolve) => elements.scene.addEventListener('loaded', resolve, { once: true })),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('scene-load-timeout')), 8000))
+        ]);
+      } catch (error) {
+        showError('ระบบ AR โหลดไม่สำเร็จ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่', { onStartScreen: true });
+        setStarting(false);
+        return;
+      }
     }
 
     started = true;
@@ -273,20 +340,25 @@
     elements.video.pause();
 
     try {
-      await elements.scene.enterAR();
+      await enterImmersiveAr();
       elements.startScreen.hidden = true;
       elements.floorGuide.hidden = false;
       setStatus(settings.status.scanning);
     } catch (error) {
       started = false;
       console.error(error);
-      showError(settings.status.sessionError || 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR');
+      const detail = String(error?.cause?.message || error?.message || '');
+      const message = detail.includes('NotAllowedError')
+        ? 'เบราว์เซอร์ไม่อนุญาตให้เปิด AR กรุณาอนุญาตกล้องแล้วลองใหม่'
+        : (settings.status.sessionError || 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR');
+      showError(message, { onStartScreen: true });
+      setStarting(false);
     }
   }
 
   async function initialize() {
     Object.assign(elements, {
-      startScreen: byId('startScreen'), poster: byId('poster'), title: byId('title'),
+      startScreen: byId('startScreen'), startError: byId('startError'), poster: byId('poster'), title: byId('title'),
       description: byId('description'), startButton: byId('startButton'), hint: byId('hint'),
       ui: byId('ui'), status: byId('status'), placeButton: byId('placeButton'),
       repositionButton: byId('repositionButton'), replayButton: byId('replayButton'),
@@ -327,6 +399,7 @@
       resetPlacement();
       elements.floorGuide.hidden = true;
       elements.startScreen.hidden = false;
+      setStarting(false);
     });
 
     document.addEventListener('visibilitychange', () => {
@@ -338,7 +411,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     initialize().catch((error) => {
       console.error(error);
-      const box = byId('errorBox');
+      const box = byId('startError') || byId('errorBox');
       if (box) {
         box.textContent = 'ระบบเริ่มทำงานไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ';
         box.hidden = false;
