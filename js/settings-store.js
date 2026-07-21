@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const VERSION = 2;
+  const VERSION = 3;
   const PUBLISHED_KEY = 'siam-tulip-webar:published:v1';
   const DRAFT_KEY = 'siam-tulip-webar:draft:v1';
   const PIN_KEY = 'siam-tulip-webar:admin-pin:v1';
@@ -13,9 +13,9 @@
     general: {
       enabled: true,
       title: 'AR ดอกกระเจียวแดง',
-      description: 'กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ',
+      description: 'อนุญาตกล้อง แล้วหันโทรศัพท์ลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ',
       startButton: 'เริ่มเปิดกล้อง AR',
-      hint: 'ขยับโทรศัพท์ช้า ๆ ซ้าย–ขวา เพื่อให้ระบบตรวจจับพื้น',
+      hint: 'ใช้ได้ทั้ง Safari บน iPhone และ Chrome บน Android ขยับโทรศัพท์ช้า ๆ เพื่อจับพื้น',
       closedTitle: 'นิทรรศการยังไม่เปิดให้เข้าชม',
       closedDescription: 'กรุณากลับมาใหม่อีกครั้งตามเวลาที่กำหนด',
       showReplayButton: true,
@@ -26,14 +26,14 @@
       repositionButton: 'ย้ายตำแหน่ง'
     },
     status: {
-      preparing: 'กำลังเตรียมระบบตรวจจับพื้น…',
-      ready: 'ระบบพร้อมแล้ว — กดเริ่ม',
+      preparing: 'กำลังเตรียมกล้องและระบบติดตามพื้น…',
+      ready: 'ระบบพร้อมแล้ว',
       scanning: 'หันกล้องลงพื้นกลางห้อง แล้วขยับโทรศัพท์ช้า ๆ',
-      found: 'จับพื้นได้แล้ว — ถือกล้องให้นิ่ง',
+      found: 'จับตำแหน่งพื้นได้แล้ว — ถือกล้องให้นิ่ง',
       placed: 'วางดอกกระเจียวแล้ว — เดินดูรอบ ๆ ได้',
-      lost: 'ตำแหน่งหลุดจากกล้อง — หันกลับไปที่พื้น',
-      unsupported: 'มือถือเครื่องนี้ยังไม่รองรับการตรวจจับพื้นแบบ WebXR',
-      sessionError: 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR',
+      lost: 'ตำแหน่งหลุด — หันกล้องกลับไปที่พื้น',
+      unsupported: 'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับกล้องและเซนเซอร์ที่ระบบ AR ต้องใช้',
+      sessionError: 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาอนุญาตกล้องและการเคลื่อนไหว แล้วเปิดใหม่อีกครั้ง',
       videoError: 'วิดีโอเริ่มเล่นไม่ได้ กรุณาแตะปุ่ม “เล่นใหม่” อีกครั้ง',
       cameraError: 'เปิดกล้องไม่ได้ กรุณาอนุญาตสิทธิ์กล้อง แล้วรีเฟรชหน้าเว็บ'
     },
@@ -55,10 +55,12 @@
       videoUrl: 'assets/siam-tulip-loop.mp4'
     },
     ar: {
-      trackingMode: 'floor',
+      trackingMode: 'world',
       autoPlace: true,
       autoPlaceDelayMs: 900,
       floorScale: 1,
+      cameraHeight: 1.6,
+      maxPlacementDistance: 7,
       fallbackToMarker: false,
       markerPreset: 'hiro',
       positionX: 0,
@@ -122,23 +124,37 @@
 
   function migrate(value) {
     const next = clone(value || {});
-    const oldDescription = 'กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น ดอกกระเจียวจะค่อย ๆ เติบโตและเล่นวนอยู่ที่ตำแหน่งเดิม';
-    const oldHint = 'ใช้ Chrome บน Android หรือ Safari บน iPhone และอนุญาตสิทธิ์กล้อง';
-    const oldScanning = 'หันกล้องไปที่มาร์กเกอร์บนพื้น';
-    const oldFound = 'พบจุด AR แล้ว — ถือกล้องให้นิ่ง';
+    const markerDescription = 'กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น ดอกกระเจียวจะค่อย ๆ เติบโตและเล่นวนอยู่ที่ตำแหน่งเดิม';
+    const floorDescription = 'กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ';
+    const markerHint = 'ใช้ Chrome บน Android หรือ Safari บน iPhone และอนุญาตสิทธิ์กล้อง';
+    const floorHint = 'ขยับโทรศัพท์ช้า ๆ ซ้าย–ขวา เพื่อให้ระบบตรวจจับพื้น';
+    const markerScanning = 'หันกล้องไปที่มาร์กเกอร์บนพื้น';
+    const floorFound = 'จับพื้นได้แล้ว — ถือกล้องให้นิ่ง';
+    const markerFound = 'พบจุด AR แล้ว — ถือกล้องให้นิ่ง';
+    const oldUnsupported = 'มือถือเครื่องนี้ยังไม่รองรับการตรวจจับพื้นแบบ WebXR';
+    const oldSessionError = 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR';
 
-    if (Number(next.version || 1) < VERSION) {
-      next.general = next.general || {};
-      next.status = next.status || {};
-      next.ar = next.ar || {};
-      if (!next.general.description || next.general.description === oldDescription) next.general.description = defaults.general.description;
-      if (!next.general.hint || next.general.hint === oldHint) next.general.hint = defaults.general.hint;
-      if (!next.status.scanning || next.status.scanning === oldScanning) next.status.scanning = defaults.status.scanning;
-      if (!next.status.found || next.status.found === oldFound) next.status.found = defaults.status.found;
-      if (!Object.prototype.hasOwnProperty.call(next.ar, 'trackingMode')) next.ar.trackingMode = 'floor';
-      if (!Object.prototype.hasOwnProperty.call(next.general, 'showMarkerButton')) next.general.showMarkerButton = false;
-      next.version = VERSION;
+    next.general = next.general || {};
+    next.status = next.status || {};
+    next.ar = next.ar || {};
+
+    if (!next.general.description || next.general.description === markerDescription || next.general.description === floorDescription) {
+      next.general.description = defaults.general.description;
     }
+    if (!next.general.hint || next.general.hint === markerHint || next.general.hint === floorHint) {
+      next.general.hint = defaults.general.hint;
+    }
+    if (!next.status.scanning || next.status.scanning === markerScanning) next.status.scanning = defaults.status.scanning;
+    if (!next.status.found || next.status.found === markerFound || next.status.found === floorFound) next.status.found = defaults.status.found;
+    if (!next.status.unsupported || next.status.unsupported === oldUnsupported) next.status.unsupported = defaults.status.unsupported;
+    if (!next.status.sessionError || next.status.sessionError === oldSessionError) next.status.sessionError = defaults.status.sessionError;
+    if (!next.status.preparing || next.status.preparing === 'กำลังเตรียมระบบตรวจจับพื้น…') next.status.preparing = defaults.status.preparing;
+
+    if (!next.ar.trackingMode || next.ar.trackingMode === 'floor') next.ar.trackingMode = 'world';
+    if (!Object.prototype.hasOwnProperty.call(next.general, 'showMarkerButton')) next.general.showMarkerButton = false;
+    if (!Object.prototype.hasOwnProperty.call(next.ar, 'cameraHeight')) next.ar.cameraHeight = defaults.ar.cameraHeight;
+    if (!Object.prototype.hasOwnProperty.call(next.ar, 'maxPlacementDistance')) next.ar.maxPlacementDistance = defaults.ar.maxPlacementDistance;
+    next.version = VERSION;
     return next;
   }
 
