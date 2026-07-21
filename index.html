@@ -6,9 +6,19 @@
   <meta name="theme-color" content="#06110a" />
   <title>กำลังเปิด Web AR…</title>
   <script src="js/settings-store.js"></script>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Noto Sans Thai", sans-serif; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #06110a; color: #fff; text-align: center; }
+    main { width: min(480px, 100%); }
+    h1 { margin: 0 0 10px; }
+    p { margin: 0; color: #c7d7cc; line-height: 1.6; }
+  </style>
 </head>
 <body>
-  <p style="font-family:system-ui;padding:24px">กำลังเปิดระบบ AR…</p>
+  <main>
+    <h1 id="title">กำลังเปิดระบบ AR…</h1>
+    <p id="description">กรุณารอสักครู่</p>
+  </main>
   <script>
     (function () {
       const params = new URLSearchParams(location.search);
@@ -16,6 +26,19 @@
       const settings = useDraft
         ? window.SiamTulipSettings.getDraft()
         : window.SiamTulipSettings.getPublished();
+
+      document.documentElement.style.background = settings.theme.background;
+      document.body.style.background = settings.theme.background;
+      document.body.style.color = settings.theme.text;
+      document.getElementById('description').style.color = settings.theme.mutedText;
+
+      if (!settings.general.enabled) {
+        document.title = settings.general.closedTitle;
+        document.getElementById('title').textContent = settings.general.closedTitle;
+        document.getElementById('description').textContent = settings.general.closedDescription;
+        return;
+      }
+
       const requestedMode = params.get('mode');
       const mode = requestedMode || settings.ar.trackingMode || 'world';
       params.delete('mode');
