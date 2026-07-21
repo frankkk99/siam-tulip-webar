@@ -40,10 +40,12 @@
       }
 
       const requestedMode = params.get('mode');
-      const mode = requestedMode || settings.ar.trackingMode || 'world';
+      const mode = requestedMode || settings.ar.trackingMode || 'lite';
       params.delete('mode');
       const query = params.toString();
-      const target = mode === 'marker' ? 'marker-ar.html' : 'world.html';
+      let target = 'lite.html';
+      if (mode === 'world') target = 'world.html';
+      if (mode === 'marker') target = 'marker-ar.html';
       location.replace(`${target}${query ? `?${query}` : ''}`);
     })();
   </script>
