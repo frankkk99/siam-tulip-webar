@@ -1,0 +1,348 @@
+(function () {
+  'use strict';
+
+  if (!window.AFRAME) return;
+
+  AFRAME.registerComponent('face-camera-y', {
+    tick: function () {
+      const scene = this.el.sceneEl;
+      if (!scene?.camera) return;
+      const object = this.el.object3D;
+      const cameraPosition = new THREE.Vector3();
+      scene.camera.getWorldPosition(cameraPosition);
+      const worldPosition = new THREE.Vector3();
+      object.getWorldPosition(worldPosition);
+      cameraPosition.y = worldPosition.y;
+      object.lookAt(cameraPosition);
+    }
+  });
+
+  AFRAME.registerComponent('floor-hit-test', {
+    init: function () {
+      this.hitTestSource = null;
+      this.viewerSpace = null;
+      this.referenceSpace = null;
+      this.lastMatrix = new THREE.Matrix4();
+      this.hasHit = false;
+      this.session = null;
+
+      this.el.addEventListener('enter-vr', () => this.setupSession());
+      this.el.addEventListener('exit-vr', () => this.cleanup());
+    },
+
+    async setupSession() {
+      if (!this.el.is('ar-mode')) return;
+      const renderer = this.el.renderer;
+      const session = renderer?.xr?.getSession?.();
+      if (!session || typeof session.requestHitTestSource !== 'function') {
+        this.el.emit('floor-hit-error', { reason: 'hit-test-unavailable' });
+        return;
+      }
+
+      this.cleanup();
+      this.session = session;
+
+      try {
+        this.viewerSpace = await session.requestReferenceSpace('viewer');
+        this.referenceSpace = renderer.xr.getReferenceSpace();
+        this.hitTestSource = await session.requestHitTestSource({ space: this.viewerSpace });
+        session.addEventListener('end', () => this.cleanup(), { once: true });
+        this.el.emit('floor-hit-ready');
+      } catch (error) {
+        console.error('Unable to start floor hit test', error);
+        this.el.emit('floor-hit-error', { reason: error?.name || 'setup-failed', error });
+      }
+    },
+
+    tick: function () {
+      if (!this.hitTestSource || !this.referenceSpace) return;
+      const frame = this.el.renderer?.xr?.getFrame?.();
+      if (!frame) return;
+
+      let results;
+      try {
+        results = frame.getHitTestResults(this.hitTestSource);
+      } catch (error) {
+        return;
+      }
+      if (!results.length) {
+        if (this.hasHit) {
+          this.hasHit = false;
+          this.el.emit('floor-hit-lost');
+        }
+        return;
+      }
+
+      const pose = results[0].getPose(this.referenceSpace);
+      if (!pose) return;
+      this.lastMatrix.fromArray(pose.transform.matrix);
+      this.hasHit = true;
+      this.el.emit('floor-hit-found', { matrix: this.lastMatrix.clone() }, false);
+    },
+
+    cleanup: function () {
+      try { this.hitTestSource?.cancel?.(); } catch (error) { console.warn(error); }
+      this.hitTestSource = null;
+      this.viewerSpace = null;
+      this.referenceSpace = null;
+      this.session = null;
+      this.hasHit = false;
+    }
+  });
+
+  const useDraft = new URLSearchParams(location.search).get('preview') === 'draft';
+  const store = window.SiamTulipSettings;
+  const mediaStore = window.SiamTulipMedia;
+  const settings = useDraft ? store.getDraft() : store.getPublished();
+  const elements = {};
+  let started = false;
+  let placed = false;
+  let currentHitMatrix = null;
+  let autoPlaceTimer = null;
+
+  function byId(id) { return document.getElementById(id); }
+
+  function setStatus(text, found = false) {
+    elements.status.textContent = text;
+    elements.status.classList.toggle('found', found);
+  }
+
+  function showError(message) {
+    elements.errorBox.textContent = message;
+    elements.errorBox.hidden = false;
+  }
+
+  function applyTheme() {
+    const root = document.documentElement;
+    root.style.setProperty('--primary', settings.theme.primary);
+    root.style.setProperty('--background', settings.theme.background);
+    root.style.setProperty('--panel', settings.theme.panel);
+    root.style.setProperty('--text', settings.theme.text);
+    root.style.setProperty('--muted', settings.theme.mutedText);
+    root.style.setProperty('--status-found', settings.theme.statusFound);
+    root.style.setProperty('--error', settings.theme.error);
+    root.style.setProperty('--radius', `${settings.theme.cornerRadius}px`);
+    root.style.setProperty('--panel-mix', `${Math.round(Number(settings.theme.overlayOpacity) * 100)}%`);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', settings.theme.background);
+    elements.reticle?.querySelectorAll('a-ring')[1]?.setAttribute('material', 'color', settings.theme.primary);
+  }
+
+  async function applyMedia() {
+    const [posterUrl, videoUrl] = await Promise.all([
+      mediaStore.resolve(settings, 'poster'),
+      mediaStore.resolve(settings, 'video')
+    ]);
+    elements.poster.src = posterUrl;
+    elements.video.src = videoUrl;
+    elements.video.loop = Boolean(settings.ar.loop);
+    elements.video.load();
+  }
+
+  function applyContent() {
+    document.title = settings.general.title;
+    elements.title.textContent = settings.general.title;
+    elements.description.textContent = settings.general.description;
+    elements.startButton.textContent = settings.general.startButton;
+    elements.hint.textContent = settings.general.hint;
+    elements.replayButton.textContent = settings.general.replayButton;
+    elements.replayButton.hidden = !settings.general.showReplayButton;
+    elements.placeButton.textContent = settings.general.placeButton || 'วางดอกไม้ตรงนี้';
+    elements.repositionButton.textContent = settings.general.repositionButton || 'ย้ายตำแหน่ง';
+    setStatus(settings.status.preparing);
+  }
+
+  function applyArSettings() {
+    const ar = settings.ar;
+    elements.plane.setAttribute('position', `${ar.positionX} ${ar.positionY} ${ar.positionZ}`);
+    elements.plane.setAttribute('rotation', `${ar.rotationX} ${ar.rotationY} ${ar.rotationZ}`);
+    elements.plane.setAttribute('width', String(ar.width));
+    elements.plane.setAttribute('height', String(ar.height));
+    elements.plane.setAttribute('material', `shader: chromakey; src: #flowerVideo; keyColor: ${ar.keyColor}; similarity: ${ar.similarity}; smoothness: ${ar.smoothness}; spill: ${ar.spill}; transparent: true; side: double; depthWrite: false`);
+  }
+
+  function showClosedScreen() {
+    elements.startScreen.classList.add('closed');
+    elements.poster.hidden = true;
+    elements.title.textContent = settings.general.closedTitle;
+    elements.description.textContent = settings.general.closedDescription;
+    elements.startButton.hidden = true;
+    elements.hint.hidden = true;
+    elements.scene.style.display = 'none';
+    elements.ui.style.display = 'none';
+  }
+
+  async function safePlay({ restart = false } = {}) {
+    try {
+      if (restart) elements.video.currentTime = 0;
+      await elements.video.play();
+    } catch (error) {
+      showError(settings.status.videoError);
+      console.error(error);
+    }
+  }
+
+  async function supportsImmersiveAr() {
+    if (!navigator.xr?.isSessionSupported) return false;
+    try { return await navigator.xr.isSessionSupported('immersive-ar'); }
+    catch (error) { console.warn(error); return false; }
+  }
+
+  function cancelAutoPlace() {
+    clearTimeout(autoPlaceTimer);
+    autoPlaceTimer = null;
+  }
+
+  function placeFlower() {
+    if (!currentHitMatrix || placed) return;
+    const position = new THREE.Vector3().setFromMatrixPosition(currentHitMatrix);
+    elements.flowerRoot.object3D.position.copy(position);
+    elements.flowerRoot.object3D.quaternion.identity();
+    elements.flowerRoot.object3D.scale.setScalar(Number(settings.ar.floorScale) || 1);
+    elements.flowerRoot.setAttribute('visible', true);
+    elements.reticle.setAttribute('visible', false);
+    elements.floorGuide.hidden = true;
+    elements.placeButton.hidden = true;
+    elements.repositionButton.hidden = false;
+    placed = true;
+    setStatus(settings.status.placed || 'วางดอกกระเจียวแล้ว — เดินดูรอบ ๆ ได้', true);
+    safePlay({ restart: true });
+  }
+
+  function resetPlacement() {
+    placed = false;
+    currentHitMatrix = null;
+    cancelAutoPlace();
+    elements.flowerRoot.setAttribute('visible', false);
+    elements.reticle.setAttribute('visible', false);
+    elements.repositionButton.hidden = true;
+    elements.floorGuide.hidden = false;
+    elements.video.pause();
+    elements.video.currentTime = 0;
+    setStatus(settings.status.scanning);
+  }
+
+  function handleHit(event) {
+    if (!started || placed) return;
+    currentHitMatrix = event.detail.matrix;
+    const position = new THREE.Vector3().setFromMatrixPosition(currentHitMatrix);
+    const quaternion = new THREE.Quaternion().setFromRotationMatrix(currentHitMatrix);
+    elements.reticle.object3D.position.copy(position);
+    elements.reticle.object3D.quaternion.copy(quaternion);
+    elements.reticle.setAttribute('visible', true);
+    setStatus(settings.status.found, true);
+
+    if (settings.ar.autoPlace !== false) {
+      if (!autoPlaceTimer) {
+        autoPlaceTimer = setTimeout(placeFlower, Math.max(250, Number(settings.ar.autoPlaceDelayMs) || 800));
+      }
+    } else {
+      elements.placeButton.hidden = false;
+    }
+  }
+
+  function handleHitLost() {
+    if (placed) return;
+    currentHitMatrix = null;
+    cancelAutoPlace();
+    elements.reticle.setAttribute('visible', false);
+    elements.placeButton.hidden = true;
+    setStatus(settings.status.scanning);
+  }
+
+  async function startAr() {
+    elements.errorBox.hidden = true;
+    const supported = await supportsImmersiveAr();
+    if (!supported) {
+      const message = settings.status.unsupported || 'มือถือเครื่องนี้ยังไม่รองรับการตรวจจับพื้นแบบ WebXR';
+      if (settings.ar.fallbackToMarker) {
+        const params = new URLSearchParams(location.search);
+        params.set('fallback', 'floor-unsupported');
+        location.replace(`marker-ar.html?${params}`);
+        return;
+      }
+      showError(message);
+      return;
+    }
+
+    if (!elements.scene.hasLoaded) {
+      await new Promise((resolve) => elements.scene.addEventListener('loaded', resolve, { once: true }));
+    }
+
+    started = true;
+    await safePlay({ restart: true });
+    elements.video.pause();
+
+    try {
+      await elements.scene.enterAR();
+      elements.startScreen.hidden = true;
+      elements.floorGuide.hidden = false;
+      setStatus(settings.status.scanning);
+    } catch (error) {
+      started = false;
+      console.error(error);
+      showError(settings.status.sessionError || 'เปิดโหมดตรวจจับพื้นไม่สำเร็จ กรุณาใช้ Chrome บน Android ที่รองรับ AR');
+    }
+  }
+
+  async function initialize() {
+    Object.assign(elements, {
+      startScreen: byId('startScreen'), poster: byId('poster'), title: byId('title'),
+      description: byId('description'), startButton: byId('startButton'), hint: byId('hint'),
+      ui: byId('ui'), status: byId('status'), placeButton: byId('placeButton'),
+      repositionButton: byId('repositionButton'), replayButton: byId('replayButton'),
+      floorGuide: byId('floorGuide'), errorBox: byId('errorBox'), scene: byId('arScene'),
+      reticle: byId('reticle'), flowerRoot: byId('flowerRoot'), plane: byId('flowerPlane'),
+      video: byId('flowerVideo')
+    });
+
+    applyTheme();
+    applyContent();
+    applyArSettings();
+    await applyMedia();
+
+    if (!settings.general.enabled) {
+      showClosedScreen();
+      return;
+    }
+
+    elements.startButton.addEventListener('click', startAr);
+    elements.placeButton.addEventListener('click', placeFlower);
+    elements.repositionButton.addEventListener('click', resetPlacement);
+    elements.replayButton.addEventListener('click', () => {
+      if (started && placed) safePlay({ restart: true });
+    });
+
+    elements.scene.addEventListener('floor-hit-ready', () => {
+      if (started && !placed) setStatus(settings.status.scanning);
+    });
+    elements.scene.addEventListener('floor-hit-found', handleHit);
+    elements.scene.addEventListener('floor-hit-lost', handleHitLost);
+    elements.scene.addEventListener('floor-hit-error', () => {
+      showError(settings.status.sessionError || 'ระบบตรวจจับพื้นเริ่มทำงานไม่สำเร็จ');
+    });
+    elements.scene.addEventListener('exit-vr', () => {
+      started = false;
+      cancelAutoPlace();
+      elements.video.pause();
+      resetPlacement();
+      elements.floorGuide.hidden = true;
+      elements.startScreen.hidden = false;
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) elements.video.pause();
+      else if (started && placed) safePlay();
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initialize().catch((error) => {
+      console.error(error);
+      const box = byId('errorBox');
+      if (box) {
+        box.textContent = 'ระบบเริ่มทำงานไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ';
+        box.hidden = false;
+      }
+    });
+  });
+})();
