@@ -32,7 +32,7 @@
         <a href="#general">หน้าเว็บ</a>
         <a href="#theme">ธีม</a>
         <a href="#media">สื่อ</a>
-        <a href="#ar">ตำแหน่ง AR</a>
+        <a href="#ar">การวาง AR</a>
         <a href="#chroma">ตัดพื้นหลัง</a>
         <a href="#status">ข้อความสถานะ</a>
         <a href="#system">ระบบ</a>
@@ -57,7 +57,7 @@
 
       <div class="content">
         <div class="hero">
-          <div><h2>ปรับ Web AR ได้จากหน้าเดียว</h2><p>แก้ข้อความ สี ไฟล์ ตำแหน่ง และพฤติกรรมของดอกกระเจียว</p></div>
+          <div><h2>ปรับ Web AR ได้จากหน้าเดียว</h2><p>เลือกตรวจจับพื้นแบบไม่ใช้มาร์กเกอร์ หรือสลับกลับไปใช้มาร์กเกอร์สำรอง</p></div>
         </div>
         <div class="notice"><strong>โหมดก่อนเชื่อม Supabase:</strong> ค่าที่เผยแพร่และไฟล์อัปโหลดจะมีผลเฉพาะเบราว์เซอร์/อุปกรณ์นี้เท่านั้น ยังไม่ส่งไปยังมือถือผู้เข้าชมเครื่องอื่น ระบบเตรียมโครงสร้าง Draft/Publish ไว้สำหรับย้ายขึ้น Supabase ภายหลังแล้ว</div>
 
@@ -72,23 +72,25 @@
                 <div class="field full"><label>คำอธิบาย</label><textarea data-setting="general.description"></textarea></div>
                 <div class="field full"><label>คำแนะนำใต้ปุ่ม</label><input type="text" data-setting="general.hint" /></div>
                 <div class="field"><label>ข้อความปุ่มเล่นใหม่</label><input type="text" data-setting="general.replayButton" /></div>
+                <div class="field"><label>ข้อความปุ่มย้ายตำแหน่ง</label><input type="text" data-setting="general.repositionButton" /></div>
+                <div class="field"><label>ข้อความปุ่มวางเอง</label><input type="text" data-setting="general.placeButton" /></div>
                 <div class="field"><label>ข้อความปุ่มมาร์กเกอร์</label><input type="text" data-setting="general.markerButton" /></div>
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="general.showReplayButton" />แสดงปุ่มเล่นใหม่</label></div>
-                <div class="field"><label class="toggle"><input type="checkbox" data-setting="general.showMarkerButton" />แสดงปุ่มมาร์กเกอร์</label></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="general.showMarkerButton" />แสดงปุ่มมาร์กเกอร์ในโหมดสำรอง</label></div>
                 <div class="field"><label>หัวข้อเมื่อปิดนิทรรศการ</label><input type="text" data-setting="general.closedTitle" /></div>
                 <div class="field"><label>รายละเอียดเมื่อปิด</label><input type="text" data-setting="general.closedDescription" /></div>
               </div>
             </section>
 
             <section id="theme" class="section full">
-              <h3>สีและหน้าตา</h3><p>ปรับธีมของหน้าเริ่มต้นและแถบสถานะ</p>
+              <h3>สีและหน้าตา</h3><p>ปรับธีมของหน้าเริ่มต้น แถบสถานะ และวงแหวนตรวจจับพื้น</p>
               <div class="fields">
                 <div class="field"><label>สีหลัก</label><input type="color" data-setting="theme.primary" /></div>
                 <div class="field"><label>สีพื้นหลัง</label><input type="color" data-setting="theme.background" /></div>
                 <div class="field"><label>สีการ์ด</label><input type="color" data-setting="theme.panel" /></div>
                 <div class="field"><label>สีข้อความ</label><input type="color" data-setting="theme.text" /></div>
                 <div class="field"><label>สีข้อความรอง</label><input type="color" data-setting="theme.mutedText" /></div>
-                <div class="field"><label>สีเมื่อพบมาร์กเกอร์</label><input type="color" data-setting="theme.statusFound" /></div>
+                <div class="field"><label>สีเมื่อจับตำแหน่งได้</label><input type="color" data-setting="theme.statusFound" /></div>
                 <div class="field"><label>ความโค้งการ์ด</label><div class="range-row"><input type="range" min="8" max="48" step="1" data-setting="theme.cornerRadius" /><input type="number" min="8" max="48" step="1" data-setting="theme.cornerRadius" /></div></div>
                 <div class="field"><label>ความทึบการ์ด</label><div class="range-row"><input type="range" min="0.4" max="1" step="0.01" data-setting="theme.overlayOpacity" /><input type="number" min="0.4" max="1" step="0.01" data-setting="theme.overlayOpacity" /></div></div>
               </div>
@@ -113,8 +115,13 @@
             </section>
 
             <section id="ar" class="section full">
-              <h3>ตำแหน่งและขนาด AR</h3><p>ปรับระนาบวิดีโอให้อยู่พอดีกับตำแหน่งบนพื้น</p>
+              <h3>การตรวจจับพื้น ตำแหน่ง และขนาด AR</h3><p>ค่าเริ่มต้นจะหาพื้นกลางห้องและวางดอกกระเจียวให้อัตโนมัติ โดยไม่ต้องติดมาร์กเกอร์</p>
               <div class="fields">
+                <div class="field full"><label>วิธีตรวจจับ</label><select data-setting="ar.trackingMode"><option value="floor">ตรวจจับพื้น ไม่ใช้มาร์กเกอร์</option><option value="marker">ใช้มาร์กเกอร์ Hiro สำรอง</option></select></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.autoPlace" />วางอัตโนมัติเมื่อจับพื้นได้</label></div>
+                <div class="field"><label>หน่วงก่อนวางอัตโนมัติ (ms)</label><input type="number" min="250" max="5000" step="50" data-setting="ar.autoPlaceDelayMs" /></div>
+                <div class="field"><label>สเกลรวมเมื่อวางบนพื้น</label><input type="number" min="0.1" max="5" step="0.05" data-setting="ar.floorScale" /></div>
+                <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.fallbackToMarker" />ถ้าเครื่องไม่รองรับ ให้เปิดโหมดมาร์กเกอร์</label></div>
                 <div class="field"><label>ความกว้าง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.width" /></div>
                 <div class="field"><label>ความสูง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.height" /></div>
                 <div class="field"><label>ตำแหน่ง X</label><input type="number" min="-5" max="5" step="0.01" data-setting="ar.positionX" /></div>
@@ -126,7 +133,7 @@
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.loop" />เล่นวิดีโอวนลูป</label></div>
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.restartWhenFound" />เริ่มใหม่เมื่อพบมาร์กเกอร์</label></div>
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.resetOnLost" />รีเซ็ตเมื่อมาร์กเกอร์หลุด</label></div>
-                <div class="field"><label>หน่วงก่อนรีเซ็ต (ms)</label><input type="number" min="0" max="10000" step="100" data-setting="ar.lostDelayMs" /></div>
+                <div class="field"><label>หน่วงก่อนรีเซ็ตมาร์กเกอร์ (ms)</label><input type="number" min="0" max="10000" step="100" data-setting="ar.lostDelayMs" /></div>
               </div>
             </section>
 
@@ -141,15 +148,18 @@
             </section>
 
             <section id="status" class="section full">
-              <h3>ข้อความสถานะ</h3><p>ข้อความที่แสดงระหว่างเปิดกล้องและตรวจจับมาร์กเกอร์</p>
+              <h3>ข้อความสถานะ</h3><p>ข้อความที่แสดงระหว่างเปิดกล้อง ตรวจจับพื้น และวางดอกกระเจียว</p>
               <div class="fields">
                 <div class="field"><label>กำลังเตรียม</label><input type="text" data-setting="status.preparing" /></div>
-                <div class="field"><label>กล้องพร้อม</label><input type="text" data-setting="status.ready" /></div>
-                <div class="field"><label>กำลังค้นหา</label><input type="text" data-setting="status.scanning" /></div>
-                <div class="field"><label>พบมาร์กเกอร์</label><input type="text" data-setting="status.found" /></div>
-                <div class="field"><label>มาร์กเกอร์หลุด</label><input type="text" data-setting="status.lost" /></div>
+                <div class="field"><label>ระบบพร้อม</label><input type="text" data-setting="status.ready" /></div>
+                <div class="field"><label>กำลังค้นหาพื้น</label><input type="text" data-setting="status.scanning" /></div>
+                <div class="field"><label>จับพื้นได้</label><input type="text" data-setting="status.found" /></div>
+                <div class="field"><label>วางสำเร็จ</label><input type="text" data-setting="status.placed" /></div>
+                <div class="field"><label>ตำแหน่งหลุด</label><input type="text" data-setting="status.lost" /></div>
+                <div class="field full"><label>เครื่องไม่รองรับ</label><input type="text" data-setting="status.unsupported" /></div>
+                <div class="field full"><label>เปิด WebXR ไม่สำเร็จ</label><input type="text" data-setting="status.sessionError" /></div>
                 <div class="field"><label>กล้องผิดพลาด</label><input type="text" data-setting="status.cameraError" /></div>
-                <div class="field full"><label>วิดีโอผิดพลาด</label><input type="text" data-setting="status.videoError" /></div>
+                <div class="field"><label>วิดีโอผิดพลาด</label><input type="text" data-setting="status.videoError" /></div>
               </div>
             </section>
 
