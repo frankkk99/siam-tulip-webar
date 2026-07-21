@@ -57,14 +57,14 @@
 
       <div class="content">
         <div class="hero">
-          <div><h2>ปรับ Web AR ได้จากหน้าเดียว</h2><p>เลือกตรวจจับพื้นแบบไม่ใช้มาร์กเกอร์ หรือสลับกลับไปใช้มาร์กเกอร์สำรอง</p></div>
+          <div><h2>ปรับ Web AR ได้จากหน้าเดียว</h2><p>โหมดหลักใช้ 8th Wall World Tracking ทำงานบน Safari iPhone และ Chrome Android โดยไม่ต้องติดมาร์กเกอร์</p></div>
         </div>
         <div class="notice"><strong>โหมดก่อนเชื่อม Supabase:</strong> ค่าที่เผยแพร่และไฟล์อัปโหลดจะมีผลเฉพาะเบราว์เซอร์/อุปกรณ์นี้เท่านั้น ยังไม่ส่งไปยังมือถือผู้เข้าชมเครื่องอื่น ระบบเตรียมโครงสร้าง Draft/Publish ไว้สำหรับย้ายขึ้น Supabase ภายหลังแล้ว</div>
 
         <div class="preview-wrap">
           <div class="grid">
             <section id="general" class="section full">
-              <h3>หน้าเว็บผู้เข้าชม</h3><p>กำหนดเนื้อหาที่ผู้เข้าชมเห็นก่อนเปิดกล้อง</p>
+              <h3>หน้าเว็บผู้เข้าชม</h3><p>กำหนดเนื้อหาและข้อความที่ผู้เข้าชมเห็นในระบบ AR</p>
               <div class="fields">
                 <div class="field full"><label>เปิดนิทรรศการ</label><div class="toggle"><input type="checkbox" data-setting="general.enabled" /><span>อนุญาตให้เปิดกล้อง AR</span></div></div>
                 <div class="field"><label>ชื่อหน้าเว็บ</label><input type="text" data-setting="general.title" /></div>
@@ -83,7 +83,7 @@
             </section>
 
             <section id="theme" class="section full">
-              <h3>สีและหน้าตา</h3><p>ปรับธีมของหน้าเริ่มต้น แถบสถานะ และวงแหวนตรวจจับพื้น</p>
+              <h3>สีและหน้าตา</h3><p>ปรับธีม แถบสถานะ และวงแหวนตำแหน่ง</p>
               <div class="fields">
                 <div class="field"><label>สีหลัก</label><input type="color" data-setting="theme.primary" /></div>
                 <div class="field"><label>สีพื้นหลัง</label><input type="color" data-setting="theme.background" /></div>
@@ -115,12 +115,14 @@
             </section>
 
             <section id="ar" class="section full">
-              <h3>การตรวจจับพื้น ตำแหน่ง และขนาด AR</h3><p>ค่าเริ่มต้นจะหาพื้นกลางห้องและวางดอกกระเจียวให้อัตโนมัติ โดยไม่ต้องติดมาร์กเกอร์</p>
+              <h3>World Tracking ตำแหน่ง และขนาด AR</h3><p>โหมดหลักติดตามพื้นด้วย SLAM บน iPhone และ Android แล้ววางดอกกระเจียวกลางหน้าจอโดยไม่ต้องติดมาร์กเกอร์</p>
               <div class="fields">
-                <div class="field full"><label>วิธีตรวจจับ</label><select data-setting="ar.trackingMode"><option value="floor">ตรวจจับพื้น ไม่ใช้มาร์กเกอร์</option><option value="marker">ใช้มาร์กเกอร์ Hiro สำรอง</option></select></div>
+                <div class="field full"><label>วิธีตรวจจับ</label><select data-setting="ar.trackingMode"><option value="world">8th Wall World Tracking — iPhone และ Android</option><option value="marker">ใช้มาร์กเกอร์ Hiro สำรอง</option></select></div>
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.autoPlace" />วางอัตโนมัติเมื่อจับพื้นได้</label></div>
                 <div class="field"><label>หน่วงก่อนวางอัตโนมัติ (ms)</label><input type="number" min="250" max="5000" step="50" data-setting="ar.autoPlaceDelayMs" /></div>
                 <div class="field"><label>สเกลรวมเมื่อวางบนพื้น</label><input type="number" min="0.1" max="5" step="0.05" data-setting="ar.floorScale" /></div>
+                <div class="field"><label>ความสูงกล้องเริ่มต้น (เมตร)</label><input type="number" min="0.5" max="3" step="0.05" data-setting="ar.cameraHeight" /></div>
+                <div class="field"><label>ระยะวางไกลสุด (เมตร)</label><input type="number" min="1" max="15" step="0.5" data-setting="ar.maxPlacementDistance" /></div>
                 <div class="field"><label class="toggle"><input type="checkbox" data-setting="ar.fallbackToMarker" />ถ้าเครื่องไม่รองรับ ให้เปิดโหมดมาร์กเกอร์</label></div>
                 <div class="field"><label>ความกว้าง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.width" /></div>
                 <div class="field"><label>ความสูง</label><input type="number" min="0.1" max="8" step="0.01" data-setting="ar.height" /></div>
@@ -148,7 +150,7 @@
             </section>
 
             <section id="status" class="section full">
-              <h3>ข้อความสถานะ</h3><p>ข้อความที่แสดงระหว่างเปิดกล้อง ตรวจจับพื้น และวางดอกกระเจียว</p>
+              <h3>ข้อความสถานะ</h3><p>ข้อความที่แสดงระหว่างเปิดกล้อง ติดตามพื้น และวางดอกกระเจียว</p>
               <div class="fields">
                 <div class="field"><label>กำลังเตรียม</label><input type="text" data-setting="status.preparing" /></div>
                 <div class="field"><label>ระบบพร้อม</label><input type="text" data-setting="status.ready" /></div>
@@ -157,7 +159,7 @@
                 <div class="field"><label>วางสำเร็จ</label><input type="text" data-setting="status.placed" /></div>
                 <div class="field"><label>ตำแหน่งหลุด</label><input type="text" data-setting="status.lost" /></div>
                 <div class="field full"><label>เครื่องไม่รองรับ</label><input type="text" data-setting="status.unsupported" /></div>
-                <div class="field full"><label>เปิด WebXR ไม่สำเร็จ</label><input type="text" data-setting="status.sessionError" /></div>
+                <div class="field full"><label>เปิด World Tracking ไม่สำเร็จ</label><input type="text" data-setting="status.sessionError" /></div>
                 <div class="field"><label>กล้องผิดพลาด</label><input type="text" data-setting="status.cameraError" /></div>
                 <div class="field"><label>วิดีโอผิดพลาด</label><input type="text" data-setting="status.videoError" /></div>
               </div>
