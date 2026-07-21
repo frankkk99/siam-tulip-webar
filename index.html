@@ -17,10 +17,10 @@
         ? window.SiamTulipSettings.getDraft()
         : window.SiamTulipSettings.getPublished();
       const requestedMode = params.get('mode');
-      const mode = requestedMode || settings.ar.trackingMode || 'floor';
+      const mode = requestedMode || settings.ar.trackingMode || 'world';
       params.delete('mode');
       const query = params.toString();
-      const target = mode === 'marker' ? 'marker-ar.html' : 'floor.html';
+      const target = mode === 'marker' ? 'marker-ar.html' : 'world.html';
       location.replace(`${target}${query ? `?${query}` : ''}`);
     })();
   </script>
