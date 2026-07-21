@@ -22,6 +22,7 @@
       <h1 id="title">AR ดอกกระเจียวแดง</h1>
       <p id="description">กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง</p>
       <button id="startButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
+      <div id="startError" class="start-error" role="alert" hidden></div>
       <div id="hint" class="hint">ขยับโทรศัพท์ช้า ๆ เพื่อให้ระบบตรวจจับพื้น</div>
     </div>
   </div>
@@ -37,7 +38,7 @@
       <button id="repositionButton" type="button" hidden>ย้ายตำแหน่ง</button>
       <button id="replayButton" type="button">เล่นใหม่</button>
     </div>
-    <div id="errorBox" class="error-box" hidden></div>
+    <div id="errorBox" class="error-box" role="alert" hidden></div>
   </div>
 
   <a-scene
