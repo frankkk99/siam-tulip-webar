@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const VERSION = 4;
+  const VERSION = 5;
   const PUBLISHED_KEY = 'siam-tulip-webar:published:v1';
   const DRAFT_KEY = 'siam-tulip-webar:draft:v1';
   const PIN_KEY = 'siam-tulip-webar:admin-pin:v1';
@@ -13,9 +13,9 @@
     general: {
       enabled: true,
       title: 'AR ดอกกระเจียวแดง',
-      description: 'อนุญาตกล้อง แล้วหันโทรศัพท์ลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ',
+      description: 'อนุญาตกล้อง แล้วหันโทรศัพท์ลงที่พื้นกลางห้อง ระบบจะยึดดอกกระเจียวไว้กับตำแหน่งจริง',
       startButton: 'เริ่มเปิดกล้อง AR',
-      hint: 'ใช้ได้ทั้ง Safari บน iPhone และ Chrome บน Android โดยไม่ต้องติดมาร์กเกอร์',
+      hint: 'ใช้ Safari บน iPhone หรือ Chrome บน Android ขยับกล้องช้า ๆ จนระบบจับพื้นได้',
       closedTitle: 'นิทรรศการยังไม่เปิดให้เข้าชม',
       closedDescription: 'กรุณากลับมาใหม่อีกครั้งตามเวลาที่กำหนด',
       showReplayButton: true,
@@ -26,14 +26,14 @@
       repositionButton: 'ย้ายตำแหน่ง'
     },
     status: {
-      preparing: 'กำลังเตรียมกล้องและระบบ AR…',
+      preparing: 'รอเริ่มเปิดกล้องและระบบติดตามพื้น…',
       ready: 'ระบบพร้อมแล้ว',
       scanning: 'หันกล้องลงพื้นกลางห้อง แล้วขยับโทรศัพท์ช้า ๆ',
       found: 'จับตำแหน่งพื้นได้แล้ว — ถือกล้องให้นิ่ง',
-      placed: 'วางดอกกระเจียวแล้ว — เดินดูรอบ ๆ ได้',
+      placed: 'วางดอกกระเจียวแล้ว — ตำแหน่งจะยึดอยู่กับพื้น',
       lost: 'ตำแหน่งหลุด — หันกล้องกลับไปที่พื้น',
       unsupported: 'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับกล้องและเซนเซอร์ที่ระบบ AR ต้องใช้',
-      sessionError: 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาใช้โหมดกล้องสำรอง',
+      sessionError: 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาอนุญาตกล้องและการเคลื่อนไหว แล้วเปิดลิงก์ตรงด้วย Safari หรือ Chrome',
       videoError: 'วิดีโอเริ่มเล่นไม่ได้ กรุณาแตะปุ่ม “เล่นใหม่” อีกครั้ง',
       cameraError: 'เปิดกล้องไม่ได้ กรุณาอนุญาตสิทธิ์กล้อง แล้วรีเฟรชหน้าเว็บ'
     },
@@ -55,7 +55,7 @@
       videoUrl: 'assets/siam-tulip-loop.mp4'
     },
     ar: {
-      trackingMode: 'lite',
+      trackingMode: 'world',
       autoPlace: true,
       autoPlaceDelayMs: 900,
       floorScale: 1,
@@ -127,9 +127,11 @@
     const previousVersion = Number(next.version || 1);
     const markerDescription = 'กดเริ่ม แล้วหันกล้องไปที่มาร์กเกอร์บนพื้น ดอกกระเจียวจะค่อย ๆ เติบโตและเล่นวนอยู่ที่ตำแหน่งเดิม';
     const floorDescription = 'กดเริ่ม แล้วหันกล้องลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ';
+    const liteDescription = 'อนุญาตกล้อง แล้วหันโทรศัพท์ลงที่พื้นกลางห้อง ระบบจะวางดอกกระเจียวให้โดยอัตโนมัติ';
     const markerHint = 'ใช้ Chrome บน Android หรือ Safari บน iPhone และอนุญาตสิทธิ์กล้อง';
     const floorHint = 'ขยับโทรศัพท์ช้า ๆ ซ้าย–ขวา เพื่อให้ระบบตรวจจับพื้น';
     const worldHint = 'ใช้ได้ทั้ง Safari บน iPhone และ Chrome บน Android ขยับโทรศัพท์ช้า ๆ เพื่อจับพื้น';
+    const liteHint = 'ใช้ได้ทั้ง Safari บน iPhone และ Chrome บน Android โดยไม่ต้องติดมาร์กเกอร์';
     const markerScanning = 'หันกล้องไปที่มาร์กเกอร์บนพื้น';
     const floorFound = 'จับพื้นได้แล้ว — ถือกล้องให้นิ่ง';
     const markerFound = 'พบจุด AR แล้ว — ถือกล้องให้นิ่ง';
@@ -140,22 +142,23 @@
     next.status = next.status || {};
     next.ar = next.ar || {};
 
-    if (!next.general.description || next.general.description === markerDescription || next.general.description === floorDescription) {
+    if (!next.general.description || [markerDescription, floorDescription, liteDescription].includes(next.general.description)) {
       next.general.description = defaults.general.description;
     }
-    if (!next.general.hint || next.general.hint === markerHint || next.general.hint === floorHint || next.general.hint === worldHint) {
+    if (!next.general.hint || [markerHint, floorHint, worldHint, liteHint].includes(next.general.hint)) {
       next.general.hint = defaults.general.hint;
     }
     if (!next.status.scanning || next.status.scanning === markerScanning) next.status.scanning = defaults.status.scanning;
     if (!next.status.found || next.status.found === markerFound || next.status.found === floorFound) next.status.found = defaults.status.found;
     if (!next.status.unsupported || next.status.unsupported === oldUnsupported) next.status.unsupported = defaults.status.unsupported;
-    if (!next.status.sessionError || next.status.sessionError === oldSessionError) next.status.sessionError = defaults.status.sessionError;
-    if (!next.status.preparing || next.status.preparing === 'กำลังเตรียมระบบตรวจจับพื้น…' || next.status.preparing === 'กำลังเตรียมกล้องและระบบติดตามพื้น…') {
-      next.status.preparing = defaults.status.preparing;
+    if (!next.status.sessionError || next.status.sessionError === oldSessionError || next.status.sessionError === 'เปิดระบบติดตามพื้นไม่สำเร็จ กรุณาใช้โหมดกล้องสำรอง') {
+      next.status.sessionError = defaults.status.sessionError;
     }
+    if (!next.status.preparing || next.status.preparing.includes('กำลังเตรียม')) next.status.preparing = defaults.status.preparing;
+    if (!next.status.placed || next.status.placed === 'วางดอกกระเจียวแล้ว — เดินดูรอบ ๆ ได้') next.status.placed = defaults.status.placed;
 
-    if (!next.ar.trackingMode || next.ar.trackingMode === 'floor') next.ar.trackingMode = 'lite';
-    if (previousVersion < VERSION && next.ar.trackingMode === 'world') next.ar.trackingMode = 'lite';
+    if (!next.ar.trackingMode || next.ar.trackingMode === 'floor') next.ar.trackingMode = 'world';
+    if (previousVersion < VERSION && next.ar.trackingMode === 'lite') next.ar.trackingMode = 'world';
     if (!Object.prototype.hasOwnProperty.call(next.general, 'showMarkerButton')) next.general.showMarkerButton = false;
     if (!Object.prototype.hasOwnProperty.call(next.ar, 'cameraHeight')) next.ar.cameraHeight = defaults.ar.cameraHeight;
     if (!Object.prototype.hasOwnProperty.call(next.ar, 'maxPlacementDistance')) next.ar.maxPlacementDistance = defaults.ar.maxPlacementDistance;
@@ -209,9 +212,7 @@
 
   function setAdminPin(pin) {
     const clean = String(pin || '').trim();
-    if (!/^\d{4,12}$/.test(clean)) {
-      throw new Error('PIN ต้องเป็นตัวเลข 4–12 หลัก');
-    }
+    if (!/^\d{4,12}$/.test(clean)) throw new Error('PIN ต้องเป็นตัวเลข 4–12 หลัก');
     localStorage.setItem(PIN_KEY, clean);
   }
 
