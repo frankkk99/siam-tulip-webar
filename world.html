@@ -10,10 +10,7 @@
   <link rel="stylesheet" href="css/site.css" />
   <link rel="preload" href="assets/siam-tulip-loop.mp4" as="video" type="video/mp4" />
 
-  <!-- 8-Frame build recommended by the 8th Wall Engine examples. -->
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/gh/8thwall/aframe-world-effects-example@main/external/scripts/8frame-1.5.0.min.js"></script>
-  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1/dist/xrextras.js"></script>
-  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@8thwall/landing-page@1/dist/landing-page.js"></script>
   <script crossorigin="anonymous" async src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js" data-preload-chunks="slam"></script>
 
   <script src="js/ar-shader.js"></script>
@@ -26,10 +23,22 @@
        License: https://github.com/8thwall/engine/blob/main/LICENSE -->
 </head>
 <body>
-  <div id="ui" class="ui a-dom-overlay" aria-live="polite">
-    <div class="topbar"><div id="status" class="status">กำลังเตรียมกล้องและระบบติดตามพื้น…</div></div>
+  <div id="worldStartScreen" class="start-screen world-start-screen">
+    <div class="card">
+      <img id="worldPoster" class="poster" src="assets/poster.jpg" alt="ดอกกระเจียวแดง" />
+      <h1 id="worldTitle">AR ดอกกระเจียวแดง</h1>
+      <p id="worldDescription">เปิดกล้องแล้วหันโทรศัพท์ลงที่พื้นกลางห้อง</p>
+      <button id="startWorldButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
+      <a id="liteFallbackButton" class="button fallback-button" href="lite.html" hidden>เปิดโหมดกล้องสำรอง</a>
+      <div id="worldStartError" class="start-error" hidden></div>
+      <div id="worldHint" class="hint">รองรับ Safari บน iPhone และ Chrome บน Android กรุณาอนุญาตกล้องและการเคลื่อนไหว</div>
+    </div>
+  </div>
 
-    <div id="floorGuide" class="floor-guide">
+  <div id="ui" class="ui" aria-live="polite">
+    <div class="topbar"><div id="status" class="status">รอเริ่มเปิดกล้อง…</div></div>
+
+    <div id="floorGuide" class="floor-guide" hidden>
       <span class="floor-guide-ring"></span>
       <small id="guideText">หันกล้องลงพื้นกลางห้อง แล้วขยับโทรศัพท์ช้า ๆ</small>
     </div>
@@ -37,8 +46,8 @@
     <div class="controls">
       <button id="placeButton" type="button" hidden>วางดอกไม้ตรงนี้</button>
       <button id="repositionButton" type="button" hidden>ย้ายตำแหน่ง</button>
-      <button id="recenterButton" type="button">ตั้งพื้นใหม่</button>
-      <button id="replayButton" type="button">เล่นใหม่</button>
+      <button id="recenterButton" type="button" hidden>ตั้งพื้นใหม่</button>
+      <button id="replayButton" type="button" hidden>เล่นใหม่</button>
     </div>
     <div id="errorBox" class="error-box" hidden></div>
   </div>
@@ -46,9 +55,9 @@
   <a-scene
     id="arScene"
     siam-world-placement
-    landing-page
-    xrextras-loading
-    xrextras-runtime-error
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
     renderer="colorManagement: true; alpha: true; antialias: true"
     xrconfig
     xrweb="allowedDevices: any">
@@ -57,11 +66,7 @@
       <video id="flowerVideo" src="assets/siam-tulip-loop.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
     </a-assets>
 
-    <a-camera
-      id="camera"
-      position="0 1.6 0"
-      look-controls="enabled: false">
-    </a-camera>
+    <a-camera id="camera" position="0 1.6 0" look-controls="enabled: false"></a-camera>
 
     <a-entity id="reticle" visible="false" position="0 0.015 -2">
       <a-ring radius-inner="0.075" radius-outer="0.105" rotation="-90 0 0" material="color: #ffffff; shader: flat; opacity: 0.92; transparent: true"></a-ring>
