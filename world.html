@@ -16,7 +16,7 @@
   <script src="js/ar-shader.js"></script>
   <script src="js/settings-store.js"></script>
   <script src="js/media-store.js"></script>
-  <script src="js/world-ar.js"></script>
+  <script defer src="js/world-ar.js"></script>
 
   <!-- This product includes the XR Engine software developed by Niantic Spatial, Inc.
        Copyright © 2026 Niantic Spatial, Inc. All rights reserved.
@@ -31,18 +31,16 @@
       <button id="startWorldButton" class="start" type="button">เริ่มเปิดกล้อง AR</button>
       <a id="liteFallbackButton" class="button fallback-button" href="lite.html" hidden>เปิดโหมดกล้องสำรอง</a>
       <div id="worldStartError" class="start-error" hidden></div>
-      <div id="worldHint" class="hint">รองรับ Safari บน iPhone และ Chrome บน Android กรุณาอนุญาตกล้องและการเคลื่อนไหว</div>
+      <div id="worldHint" class="hint">ระบบจะเริ่มติดตามพื้นหลังจากแตะปุ่มนี้ กรุณาอนุญาตกล้องและการเคลื่อนไหว</div>
     </div>
   </div>
 
   <div id="ui" class="ui" aria-live="polite">
     <div class="topbar"><div id="status" class="status">รอเริ่มเปิดกล้อง…</div></div>
-
     <div id="floorGuide" class="floor-guide" hidden>
       <span class="floor-guide-ring"></span>
       <small id="guideText">หันกล้องลงพื้นกลางห้อง แล้วขยับโทรศัพท์ช้า ๆ</small>
     </div>
-
     <div class="controls">
       <button id="placeButton" type="button" hidden>วางดอกไม้ตรงนี้</button>
       <button id="repositionButton" type="button" hidden>ย้ายตำแหน่ง</button>
@@ -58,9 +56,7 @@
     embedded
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
-    renderer="colorManagement: true; alpha: true; antialias: true"
-    xrconfig
-    xrweb="allowedDevices: any">
+    renderer="colorManagement: true; alpha: true; antialias: true">
 
     <a-assets timeout="30000">
       <video id="flowerVideo" src="assets/siam-tulip-loop.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
