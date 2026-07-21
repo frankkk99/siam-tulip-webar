@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>สร้าง QR สำหรับ Web AR</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #07130c; color: white; font-family: system-ui, -apple-system, "Noto Sans Thai", sans-serif; }
+    main { width: min(520px, 100%); padding: 24px; border-radius: 24px; background: #10271a; }
+    input, button { width: 100%; padding: 14px; border-radius: 13px; font: inherit; }
+    input { border: 1px solid #45634f; background: #07130c; color: white; }
+    button { margin-top: 10px; border: 0; background: #27a65e; color: white; font-weight: 800; }
+    #qr { display: block; width: 320px; max-width: 100%; aspect-ratio: 1; margin: 20px auto 0; background: white; border-radius: 16px; }
+    p { color: #b7c7bc; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>สร้าง QR เปิดหน้า Web AR</h1>
+    <p>หลัง Deploy ให้วาง URL จริง แล้วกดสร้าง QR จากนั้นบันทึกภาพได้ด้วยการกดค้างบนมือถือหรือคลิกขวาบนคอมพิวเตอร์</p>
+    <input id="url" type="url" placeholder="https://ชื่อโปรเจกต์.vercel.app/" />
+    <button id="make" type="button">สร้าง QR</button>
+    <img id="qr" alt="QR code" />
+  </main>
+  <script>
+    const url = document.getElementById('url');
+    const qr = document.getElementById('qr');
+    document.getElementById('make').addEventListener('click', () => {
+      const value = url.value.trim();
+      if (!/^https:\/\//i.test(value)) return alert('กรุณาใส่ URL ที่ขึ้นต้นด้วย https://');
+      qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=900x900&margin=24&data=' + encodeURIComponent(value);
+    });
+  </script>
+</body>
+</html>
